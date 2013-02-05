@@ -216,6 +216,15 @@ void RGWProcess::run()
     if (chmod(path, 0777) < 0) {
       dout(0) << "WARNING: couldn't set permissions on unix domain socket" << dendl;
     }
+  } else if (!g_conf->rgw_port.empty()) {
+    string port_str = g_conf->rgw_port.empty();
+
+    const char *port = port_str.c_str();
+    s = FCGX_OpenSocket(port, SOCKET_BACKLOG);
+    if (s < 0) {
+      dout(0) << "ERROR: FCGX_OpenSocket (" << port << ") returned " << s << dendl;
+      return;
+    }
   }
 
   m_tp.start();
@@ -369,8 +378,8 @@ int main(int argc, const char **argv)
 
   pid_t childpid = 0;
   if (g_conf->daemonize) {
-    if (g_conf->rgw_socket_path.empty()) {
-      cerr << "radosgw: must specify 'rgw socket path' to run as a daemon" << std::endl;
+    if (g_conf->rgw_socket_path.empty() or g_conf->rgw_port.empty()) {
+      cerr << "radosgw: must specify 'rgw socket path' or 'rgw port' to run as a daemon" << std::endl;
       exit(1);
     }
 
